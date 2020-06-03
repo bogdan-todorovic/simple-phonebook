@@ -1,5 +1,6 @@
 const express = require("express");
 const morgan = require("morgan");
+const cors = require("cors");
 
 morgan.token("body", (req, res) => {
   if (req.method === "POST")
@@ -9,8 +10,9 @@ morgan.token("body", (req, res) => {
 const app = express();
 app.use(express.json());
 app.use(morgan(":method :url :status :res[content-length] - :response-time ms :body"));
+app.use(cors());
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log("Server is up and running.");
 });
@@ -49,17 +51,18 @@ app.get("/api/persons/:id", (req, res) => {
 
 app.post("/api/persons", (req, res) => {
   if (!req.body.name)
-    return res.status(400).send("Name is missing.");
-  
-  if (!req.body.number)
-    return res.status(400).send("Number is missing.");
+    return res.status(400).json({"error": "Name is missing"});
 
-  if (!persons.find(p => p.name === req.body.name))
-    return res.status(400).send("Name must be unique."); 
+  if (!req.body.number) {
+    return res.status(400).json({"error": "Number is missing"});
+  }
+  if (persons.find(p => p.name === req.body.name))
+    return res.status(400).json({"error": "Name must be unique"});
 
   const newPerson = req.body;
   newPerson.id = Math.floor(Math.random() * 10000);
   persons = persons.concat(newPerson);
+  console.log(newPerson);
   res.json(newPerson);
 });
 
