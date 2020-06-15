@@ -27,11 +27,14 @@ app.get("/api/persons", (req, res) => {
     .then(people => res.json(people));
 });
 
-app.get("/api/persons/:id", (req, res) => {
+app.get("/api/persons/:id", (req, res, next) => {
   Person
     .findById(req.params.id)
-    .then(person => res.json(person))
-    .catch(error => res.status(400).end());
+    .then(person => {
+      if (person) res.json(person);
+      res.status(404).end();
+    })
+    .catch(error => next(error));
 });
 
 app.post("/api/persons", (req, res) => {
@@ -52,15 +55,41 @@ app.post("/api/persons", (req, res) => {
     .then(savedPerson => res.json(savedPerson));
 });
 
-app.delete("/api/persons/:id", (req, res) => {
+app.put("/api/persons/:id", (req, res, next) => {
+  console.log("ID:", req.params.id);
+  Person
+    .findOneAndUpdate({ _id: req.params.id }, req.body, { new: true })
+    .then(updatedPerson => res.json(updatedPerson))
+    .catch(error => next(error));
+});
+
+app.delete("/api/persons/:id", (req, res, next) => {
   Person
     .findOneAndDelete({ _id: req.params.id })
-    .then(deleted => res.status(204).end())
-    .catch(error => res.status(400).send("Unable to delete."));
+    .then(deleted => {
+      if (deleted) res.status(204).end();
+      res.status(404).end();
+    })
+    .catch(error => next(error));
 });
 
 app.get("/info", (req, res) => {
-  res.write(`Phonebook has info for ${persons.length} people`);
-  res.write(`\n${Date()}`);
-  res.end();
+  Person
+    .count()
+    .then(count => {
+      res.write(`Phonebook has info for ${count} people`);
+      res.write(`\n${Date()}`);
+      res.end();
+    });
+  
 });
+
+const errorHandler = (err, req, res, next) => {
+  console.log(err.message);
+
+  if (err.name === "CastError")
+    return res.status(400).send({ error: "Malformatted id" });
+  
+  next(err);
+};
+app.use(errorHandler);
