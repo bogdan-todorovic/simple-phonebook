@@ -5,10 +5,10 @@ require("dotenv").config();
 
 const Person = require("./models/person");
 
-morgan.token("body", (req, res) => {
+morgan.token("body", req => {
   if (req.method === "POST")
-    return JSON.stringify(req.body)
-})
+    return JSON.stringify(req.body);
+});
 
 const app = express();
 app.use(express.static("build"));
@@ -39,17 +39,17 @@ app.get("/api/persons/:id", (req, res, next) => {
 
 app.post("/api/persons", (req, res, next) => {
   if (!req.body.name)
-    return res.status(400).json({"error": "Name is missing"});
+    return res.status(400).json({ "error": "Name is missing" });
 
   if (!req.body.number) {
-    return res.status(400).json({"error": "Number is missing"});
+    return res.status(400).json({ "error": "Number is missing" });
   }
 
   const newPerson = new Person({
     name: req.body.name,
     number: req.body.number
   });
-  
+
   newPerson
     .save()
     .then(savedPerson => res.json(savedPerson))
@@ -81,7 +81,6 @@ app.get("/info", (req, res) => {
       res.write(`\n${Date()}`);
       res.end();
     });
-  
 });
 
 const errorHandler = (err, req, res, next) => {
@@ -91,7 +90,7 @@ const errorHandler = (err, req, res, next) => {
     res.status(400).send({ error: "Malformatted id" });
   if (err.name === "ValidationError")
     res.status(400).send({ error: err.message });
-  
+
   next(err);
 };
 app.use(errorHandler);
